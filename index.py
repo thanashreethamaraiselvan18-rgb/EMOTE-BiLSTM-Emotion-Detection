@@ -1,219 +1,132 @@
-{
-  "nbformat": 4,
-  "nbformat_minor": 0,
-  "metadata": {
-    "colab": {
-      "provenance": [],
-      "authorship_tag": "ABX9TyMngAtzCitGK0PY57cU1IGd",
-      "include_colab_link": true
-    },
-    "kernelspec": {
-      "name": "python3",
-      "display_name": "Python 3"
-    },
-    "language_info": {
-      "name": "python"
-    }
-  },
-  "cells": [
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "view-in-github",
-        "colab_type": "text"
-      },
-      "source": [
-        "<a href=\"https://colab.research.google.com/github/thanashreethamaraiselvan18-rgb/EMOTE-BiLSTM-Emotion-Detection/blob/main/index.py\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 1,
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/"
-        },
-        "id": "ww_BrkhSKtll",
-        "outputId": "55150255-d50a-493c-843e-ae3b71ecdca2"
-      },
-      "outputs": [
-        {
-          "output_type": "stream",
-          "name": "stdout",
-          "text": [
-            "Enter a sentence to detect emotion: i m happy\n",
-            "\n",
-            "🔍 Emotion Detection Result\n",
-            "----------------------------\n",
-            "User Input        : i m happy\n",
-            "Predicted Emotion : happy\n",
-            "\n",
-            "📊 Model Evaluation Metrics\n",
-            "----------------------------\n",
-            "Accuracy: 0.90\n",
-            "Classification Report:\n",
-            "\n",
-            "              precision    recall  f1-score   support\n",
-            "\n",
-            "       anger       1.00      1.00      1.00         3\n",
-            "     disgust       1.00      0.67      0.80         3\n",
-            "        fear       1.00      0.67      0.80         3\n",
-            "       happy       1.00      1.00      1.00         3\n",
-            "        love       1.00      1.00      1.00         3\n",
-            "     neutral       0.00      0.00      0.00         0\n",
-            "         sad       1.00      1.00      1.00         3\n",
-            "    surprise       1.00      1.00      1.00         3\n",
-            "\n",
-            "    accuracy                           0.90        21\n",
-            "   macro avg       0.88      0.79      0.82        21\n",
-            "weighted avg       1.00      0.90      0.94        21\n",
-            "\n"
-          ]
-        }
-      ],
-      "source": [
-        "import re\n",
-        "from sklearn.metrics import accuracy_score, classification_report\n",
-        "emotion_lexicon = {\n",
-        "    # Happy\n",
-        "    \"happy\": \"happy\", \"joy\": \"happy\", \"joyful\": \"happy\", \"excited\": \"happy\",\n",
-        "    \"great\": \"happy\", \"pleased\": \"happy\", \"smile\": \"happy\", \"delighted\": \"happy\",\n",
-        "\n",
-        "    # Sad\n",
-        "    \"sad\": \"sad\", \"depressed\": \"sad\", \"cry\": \"sad\", \"crying\": \"sad\",\n",
-        "    \"lonely\": \"sad\", \"unhappy\": \"sad\", \"down\": \"sad\", \"hopeless\": \"sad\",\n",
-        "\n",
-        "    # Anger\n",
-        "    \"angry\": \"anger\", \"anger\": \"anger\", \"mad\": \"anger\",\n",
-        "    \"furious\": \"anger\", \"hate\": \"anger\", \"annoyed\": \"anger\", \"irritated\": \"anger\",\n",
-        "\n",
-        "    # Fear\n",
-        "    \"fear\": \"fear\", \"scared\": \"fear\", \"afraid\": \"fear\",\n",
-        "    \"nervous\": \"fear\", \"terrified\": \"fear\", \"frightened\": \"fear\", \"panic\": \"fear\",\n",
-        "\n",
-        "    # Surprise\n",
-        "    \"surprise\": \"surprise\", \"shocked\": \"surprise\", \"amazed\": \"surprise\",\n",
-        "    \"astonished\": \"surprise\", \"unexpected\": \"surprise\", \"wow\": \"surprise\",\n",
-        "\n",
-        "    # Love\n",
-        "    \"love\": \"love\", \"loved\": \"love\", \"loving\": \"love\",\n",
-        "    \"care\": \"love\", \"affection\": \"love\", \"romantic\": \"love\", \"dear\": \"love\",\n",
-        "\n",
-        "    # Disgust\n",
-        "    \"disgust\": \"disgust\", \"disgusted\": \"disgust\", \"gross\": \"disgust\",\n",
-        "    \"dirty\": \"disgust\", \"nasty\": \"disgust\", \"awful\": \"disgust\"\n",
-        "}\n",
-        "texts = [\n",
-        "    # Happy\n",
-        "    \"I am very happy today\",\n",
-        "    \"This makes me feel joyful\",\n",
-        "    \"I am delighted with the result\",\n",
-        "\n",
-        "    # Sad\n",
-        "    \"I feel sad and lonely\",\n",
-        "    \"This is a hopeless situation\",\n",
-        "    \"I am crying today\",\n",
-        "\n",
-        "    # Anger\n",
-        "    \"I am very angry right now\",\n",
-        "    \"I hate this situation\",\n",
-        "    \"This makes me furious\",\n",
-        "\n",
-        "    # Fear\n",
-        "    \"I am scared of the exam\",\n",
-        "    \"I feel nervous\",\n",
-        "    \"This is frightening\",\n",
-        "\n",
-        "    # Surprise\n",
-        "    \"Wow this is unexpected\",\n",
-        "    \"I am shocked by the news\",\n",
-        "    \"That was an amazing surprise\",\n",
-        "\n",
-        "    # Love\n",
-        "    \"I love my family\",\n",
-        "    \"I care deeply about you\",\n",
-        "    \"This is a romantic moment\",\n",
-        "\n",
-        "    # Disgust\n",
-        "    \"This food is disgusting\",\n",
-        "    \"That smell is awful\",\n",
-        "    \"The place looks dirty\"\n",
-        "]\n",
-        "\n",
-        "true_emotions = [\n",
-        "    \"happy\",\"happy\",\"happy\",\n",
-        "    \"sad\",\"sad\",\"sad\",\n",
-        "    \"anger\",\"anger\",\"anger\",\n",
-        "    \"fear\",\"fear\",\"fear\",\n",
-        "    \"surprise\",\"surprise\",\"surprise\",\n",
-        "    \"love\",\"love\",\"love\",\n",
-        "    \"disgust\",\"disgust\",\"disgust\"\n",
-        "]\n",
-        "\n",
-        "# --------------------------------------------\n",
-        "# TEXT PREPROCESSING\n",
-        "# --------------------------------------------\n",
-        "def clean_text(text):\n",
-        "    text = text.lower()\n",
-        "    text = re.sub(r\"[^a-zA-Z ]\", \"\", text)\n",
-        "    return text.split()\n",
-        "\n",
-        "# --------------------------------------------\n",
-        "# EMOTION PREDICTION FUNCTION\n",
-        "# --------------------------------------------\n",
-        "def predict_emotion(text):\n",
-        "    words = clean_text(text)\n",
-        "    detected = []\n",
-        "\n",
-        "    for word in words:\n",
-        "        if word in emotion_lexicon:\n",
-        "            detected.append(emotion_lexicon[word])\n",
-        "\n",
-        "    if detected:\n",
-        "        return max(set(detected), key=detected.count)\n",
-        "    else:\n",
-        "        return \"neutral\"\n",
-        "\n",
-        "# --------------------------------------------\n",
-        "# DATASET PREDICTION (FOR METRICS)\n",
-        "# --------------------------------------------\n",
-        "predicted_emotions = [predict_emotion(sentence) for sentence in texts]\n",
-        "\n",
-        "# --------------------------------------------\n",
-        "# USER INPUT\n",
-        "# --------------------------------------------\n",
-        "user_input = input(\"Enter a sentence to detect emotion: \")\n",
-        "user_prediction = predict_emotion(user_input)\n",
-        "\n",
-        "print(\"\\n🔍 Emotion Detection Result\")\n",
-        "print(\"----------------------------\")\n",
-        "print(\"User Input        :\", user_input)\n",
-        "print(\"Predicted Emotion :\", user_prediction)\n",
-        "\n",
-        "# --------------------------------------------\n",
-        "# ACCURACY & CLASSIFICATION REPORT (AFTER INPUT)\n",
-        "# --------------------------------------------\n",
-        "accuracy = accuracy_score(true_emotions, predicted_emotions)\n",
-        "\n",
-        "print(\"\\n📊 Model Evaluation Metrics\")\n",
-        "print(\"----------------------------\")\n",
-        "print(\"Accuracy:\", format(accuracy, \".2f\"))\n",
-        "print(\"Classification Report:\\n\")\n",
-        "print(classification_report(\n",
-        "    true_emotions,\n",
-        "    predicted_emotions,\n",
-        "    zero_division=0\n",
-        "))\n"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "source": [],
-      "metadata": {
-        "id": "yaR3sFgpaqYZ"
-      },
-      "execution_count": null,
-      "outputs": []
-    }
-  ]
+import re
+from sklearn.metrics import accuracy_score, classification_report
+emotion_lexicon = {
+    # Happy
+    "happy": "happy", "joy": "happy", "joyful": "happy", "excited": "happy",
+    "great": "happy", "pleased": "happy", "smile": "happy", "delighted": "happy",
+
+    # Sad
+    "sad": "sad", "depressed": "sad", "cry": "sad", "crying": "sad",
+    "lonely": "sad", "unhappy": "sad", "down": "sad", "hopeless": "sad",
+
+    # Anger
+    "angry": "anger", "anger": "anger", "mad": "anger",
+    "furious": "anger", "hate": "anger", "annoyed": "anger", "irritated": "anger",
+
+    # Fear
+    "fear": "fear", "scared": "fear", "afraid": "fear",
+    "nervous": "fear", "terrified": "fear", "frightened": "fear", "panic": "fear",
+
+    # Surprise
+    "surprise": "surprise", "shocked": "surprise", "amazed": "surprise",
+    "astonished": "surprise", "unexpected": "surprise", "wow": "surprise",
+
+    # Love
+    "love": "love", "loved": "love", "loving": "love",
+    "care": "love", "affection": "love", "romantic": "love", "dear": "love",
+
+    # Disgust
+    "disgust": "disgust", "disgusted": "disgust", "gross": "disgust",
+    "dirty": "disgust", "nasty": "disgust", "awful": "disgust"
 }
+texts = [
+    # Happy
+    "I am very happy today",
+    "This makes me feel joyful",
+    "I am delighted with the result",
+
+    # Sad
+    "I feel sad and lonely",
+    "This is a hopeless situation",
+    "I am crying today",
+
+    # Anger
+    "I am very angry right now",
+    "I hate this situation",
+    "This makes me furious",
+
+    # Fear
+    "I am scared of the exam",
+    "I feel nervous",
+    "This is frightening",
+
+    # Surprise
+    "Wow this is unexpected",
+    "I am shocked by the news",
+    "That was an amazing surprise",
+
+    # Love
+    "I love my family",
+    "I care deeply about you",
+    "This is a romantic moment",
+
+    # Disgust
+    "This food is disgusting",
+    "That smell is awful",
+    "The place looks dirty"
+]
+
+true_emotions = [
+    "happy","happy","happy",
+    "sad","sad","sad",
+    "anger","anger","anger",
+    "fear","fear","fear",
+    "surprise","surprise","surprise",
+    "love","love","love",
+    "disgust","disgust","disgust"
+]
+
+# --------------------------------------------
+# TEXT PREPROCESSING
+# --------------------------------------------
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r"[^a-zA-Z ]", "", text)
+    return text.split()
+
+# --------------------------------------------
+# EMOTION PREDICTION FUNCTION
+# --------------------------------------------
+def predict_emotion(text):
+    words = clean_text(text)
+    detected = []
+
+    for word in words:
+        if word in emotion_lexicon:
+            detected.append(emotion_lexicon[word])
+
+    if detected:
+        return max(set(detected), key=detected.count)
+    else:
+        return "neutral"
+
+# --------------------------------------------
+# DATASET PREDICTION (FOR METRICS)
+# --------------------------------------------
+predicted_emotions = [predict_emotion(sentence) for sentence in texts]
+
+# --------------------------------------------
+# USER INPUT
+# --------------------------------------------
+user_input = input("Enter a sentence to detect emotion: ")
+user_prediction = predict_emotion(user_input)
+
+print("\n🔍 Emotion Detection Result")
+print("----------------------------")
+print("User Input        :", user_input)
+print("Predicted Emotion :", user_prediction)
+
+# --------------------------------------------
+# ACCURACY & CLASSIFICATION REPORT (AFTER INPUT)
+# --------------------------------------------
+accuracy = accuracy_score(true_emotions, predicted_emotions)
+
+print("\n📊 Model Evaluation Metrics")
+print("----------------------------")
+print("Accuracy:", format(accuracy, ".2f"))
+print("Classification Report:\n")
+print(classification_report(
+    true_emotions,
+    predicted_emotions,
+    zero_division=0
+))
